@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drake Panel - User Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .container { background: #1e1e1e; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); width: 100%; max-width: 400px; text-align: center; }
+        h2 { color: #00ffcc; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #00ffcc; color: #121212; border: none; font-weight: bold; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #00cca3; }
+        .hidden { display: none; }
+        .info-box { background: #2a2a2a; padding: 15px; border-radius: 5px; margin-top: 15px; text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Drake Panel</h2>
+        <div id="loginSection">
+            <input type="text" id="keyInput" placeholder="Enter Your Key (e.g., DRKE-XXXX)" />
+            <button onclick="verifyKey()">Login / Unlock</button>
+            <p id="errorMsg" style="color: #ff4d4d; font-size: 14px;"></p>
+        </div>
+        <div id="dashboardSection" class="hidden">
+            <div class="info-box">
+                <p><strong>Status:</strong> <span style="color: #00ffcc;">Active</span></p>
+                <p><strong>Expires At:</strong> <span id="expiryTime">Loading...</span></p>
+            </div>
+            <button onclick="openVpnApp()" style="background: #ff9900; color: #fff;">ADD SUBSCRIPTION (Happ Proxy)</button>
+        </div>
+    </div>
+    <script>
+        let currentKey = "";
+        async function verifyKey() {
+            const key = document.getElementById('keyInput').value.trim();
+            const errorMsg = document.getElementById('errorMsg');
+            if (!key) { errorMsg.innerText = "Please enter a key!"; return; }
+            try {
+                const response = await fetch('/api/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: key, deviceId: 'WEB_DEVICE_' + Math.random() })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    currentKey = key;
+                    document.getElementById('loginSection').classList.add('hidden');
+                    document.getElementById('dashboardSection').classList.remove('hidden');
+                    document.getElementById('expiryTime').innerText = data.expires_at || 'Active';
+                } else { errorMsg.innerText = data.message; }
+            } catch (err) { errorMsg.innerText = "Server connection error!"; }
+        }
+        function openVpnApp() {
+            if (!currentKey) return;
+            const subUrl = window.location.origin + "/sub/" + currentKey;
+            navigator.clipboard.writeText(subUrl).then(() => {
+                alert("Subscription Link Copied! Opening Happ Proxy App...");
+                window.location.href = "happ://import/" + encodeURIComponent(subUrl);
+            });
+        }
+    </script>
+</body>
+</html>
